@@ -1287,7 +1287,40 @@ func TestMultipleUnmarshals(t *testing.T) {
 				},
 			},
 		},
-		"DefaultExtension": {
+		"RFC3550Extension": {
+			rawPkt: []byte{
+				0x90, 0xe0, 0x69, 0x8f, 0xd9, 0xc2, 0x93, 0xda, 0x1c, 0x64,
+				0x27, 0x82, 0x11, 0x11, 0x00, 0x01, 0xAA, 0xAA, 0xAA, 0xAA,
+				0xff,
+			},
+			expectedPacket: &Packet{Header: Header{
+				Marker:           true,
+				Extension:        true,
+				ExtensionProfile: 0x1111,
+				Extensions: []Extension{
+					{0, []byte{
+						0xAA, 0xAA, 0xAA, 0xAA,
+					}},
+				},
+				Version:        2,
+				PayloadType:    96,
+				PayloadOffset:  20,
+				SequenceNumber: 27023,
+				Timestamp:      3653407706,
+				SSRC:           476325762,
+				CSRC:           []uint32{},
+			},
+				Payload: []byte{
+					0xff,
+				},
+				Raw: []byte{
+					0x90, 0xe0, 0x69, 0x8f, 0xd9, 0xc2, 0x93, 0xda, 0x1c, 0x64,
+					0x27, 0x82, 0x11, 0x11, 0x00, 0x01, 0xAA, 0xAA, 0xAA, 0xAA,
+					0xff,
+				},
+			},
+		},
+		"NoExtension": {
 			rawPkt: []byte{
 				0x80, 0xe0, 0x69, 0x8f, 0xd9, 0xc2, 0x93, 0xda, 0x1c, 0x64,
 				0x27, 0x82, 0x00, 0x01, 0x98, 0x36, 0xbe, 0x88, 0x9e,
@@ -1353,7 +1386,12 @@ func TestUnmarshalExtensionThenPacketWithoutExtension(t *testing.T) {
 		0x27, 0x82, 0x00, 0x01, 0x98, 0x36, 0xbe, 0x88, 0x9e,
 	}
 
-	parsedPacket := &Packet{Header: Header{
+	// The data in this packet should be equivalent to the binary data in the
+	// "pktWithoutExtensions". If the unmarshal does not correctly reset the
+	// extension state of the "p" packet struct, then when the binary data is
+	// unmarshaled, the generated "p" packet will not line up with our
+	// "parsedWithoutExtension" expected.
+	parsedWithoutExtension := &Packet{Header: Header{
 		Marker:           true,
 		Extension:        false,
 		ExtensionProfile: 0,
@@ -1377,8 +1415,8 @@ func TestUnmarshalExtensionThenPacketWithoutExtension(t *testing.T) {
 
 	if err := p.Unmarshal(pktWithoutExtensions); err != nil {
 		t.Error(err)
-	} else if !reflect.DeepEqual(p, parsedPacket) {
-		t.Errorf("Test unmarshal with extension then without extension: got %#v, want %#v", p, parsedPacket)
+	} else if !reflect.DeepEqual(p, parsedWithoutExtension) {
+		t.Errorf("Test unmarshal with extension then without extension: got %#v, want %#v", p, parsedWithoutExtension)
 	}
 
 }
