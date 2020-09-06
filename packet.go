@@ -122,6 +122,7 @@ func (h *Header) Unmarshal(rawPacket []byte) error {
 		h.CSRC[i] = binary.BigEndian.Uint32(rawPacket[offset:])
 	}
 
+	h.Extensions = nil
 	if h.Extension {
 		if expected := currOffset + 4; len(rawPacket) < expected {
 			return fmt.Errorf("size %d < %d: %w",
@@ -194,6 +195,8 @@ func (h *Header) Unmarshal(rawPacket []byte) error {
 			h.Extensions = append(h.Extensions, extension)
 			currOffset += len(h.Extensions[0].payload)
 		}
+	} else {
+		h.ExtensionProfile = 0
 	}
 
 	h.PayloadOffset = currOffset
